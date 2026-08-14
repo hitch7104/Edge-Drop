@@ -2,12 +2,33 @@
   <img src="public/Logo.gif" alt="Edge-Drop Logo" width="220" style="max-width: 100%; height: auto;" />
 </p>
 
-<h1 align="center">Edge-Drop</h1>
+<h1 align="center">Clip2SSH Edge</h1>
 
 <p align="center">
   <strong>A zero-click, hover-activated clipboard shelf and desktop file-transfer hub with native OS integration.</strong><br/>
-  Lives invisibly on the screen edge. Approach it, and it opens. Drag anything out — into Photoshop, Word, Slack, Explorer, anywhere.
+  Lives invisibly on the screen edge. Approach it, and it opens. Drag anything out — into Photoshop, Word, Slack, Explorer, anywhere.<br/>
+  <strong>…and send it to an SSH host with one keystroke.</strong>
 </p>
+
+> ### ℹ️ This is a fork
+>
+> **Clip2SSH Edge** is a personal fork of [**Edge-Drop**](https://github.com/Deepender25/Edge-Drop) by
+> [Deepender25](https://github.com/Deepender25), used under Apache-2.0. Everything below describes the
+> upstream app and still applies. This fork adds one feature and renames the product:
+>
+> - **SSH upload targets.** Any shelf item — image, text, or file bundle — can be `scp`'d to a
+>   configured host, with the remote path handed back on your clipboard. Per-target global hotkeys,
+>   key-based auth only (`BatchMode=yes`). Configure under **Settings ▸ Targets**.
+> - **Absorbs [clip2ssh](https://github.com/hitch7104/clip2ssh)**, a WinForms tray utility that did the
+>   same job for clipboard images only. Existing `%APPDATA%\clip2ssh\config.json` profiles are imported
+>   automatically on first run, hotkeys included.
+> - **Autostart via a delayed-logon Scheduled Task** instead of the registry `Run` key, which can be
+>   dropped when the shell has a rough logon.
+> - **Auto-update is disabled.** There is no release feed for this build; leaving it pointed at
+>   upstream would replace this app with a version that has no SSH feature.
+>
+> New code lives in `electron/main/ssh*.ts`, `electron/main/autostart.ts`,
+> `electron/store/clip2sshImport.ts`, and `src/components/Ssh*.tsx`.
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> ·

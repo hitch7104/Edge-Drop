@@ -1,8 +1,8 @@
 {
-  "name": "edge-drop",
+  "name": "clip2ssh-edge",
   "version": "0.2.6",
-  "description": "Edge-Drop — a clipboard manager that lives on the left edge of your screen and expands on hover.",
-  "author": "Edge-Drop",
+  "description": "Clip2SSH Edge — an edge-of-screen clipboard shelf that scp's what you copy to your SSH hosts. A fork of Edge-Drop (Apache-2.0) that absorbs the clip2ssh tray utility.",
+  "author": "hitch7104",
   "license": "Apache-2.0",
   "private": true,
   "main": "out/main/index.js",
@@ -22,8 +22,8 @@
     "test": "vitest run"
   },
   "build": {
-    "appId": "com.edgedrop.app",
-    "productName": "Edge-Drop",
+    "appId": "com.clip2ssh.edge",
+    "productName": "Clip2SSH Edge",
     "directories": {
       "output": "dist",
       "buildResources": "resources"
@@ -33,11 +33,7 @@
       "resources/**/*",
       "package.json"
     ],
-    "publish": {
-      "provider": "github",
-      "owner": "Deepender25",
-      "repo": "Edge-Drop"
-    },
+    "publish": null,
     "win": {
       "target": [
         {
@@ -59,17 +55,17 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "Edge-Drop",
+      "shortcutName": "Clip2SSH Edge",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "Edge-Drop-Setup-${version}.${ext}"
+      "artifactName": "Clip2SSH-Edge-Setup-${version}.${ext}"
     },
     "appx": {
-      "identityName": "Deepender.EdgeDrop",
+      "identityName": "hitch7104.Clip2SSHEdge",
       "publisher": "CN=55FECDC4-7144-4A41-98FC-056C003F76FD",
-      "publisherDisplayName": "Deepender",
-      "applicationId": "EdgeDrop",
-      "displayName": "Edge Drop"
+      "publisherDisplayName": "hitch7104",
+      "applicationId": "Clip2SSHEdge",
+      "displayName": "Clip2SSH Edge"
     }
   },
   "devDependencies": {

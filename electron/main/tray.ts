@@ -13,6 +13,7 @@ import { loadSettings, saveSettings } from '../store/settings'
 import { getMainWindow, setVisible, repositionWindow, getDisplayListOptions, registerWindowRepositionListener, popUpAndRetract } from './window'
 import type { StickPosition } from '../../shared/types'
 import { pushState } from './state'
+import { APP_CONFIG } from './config'
 import { TRANSLATIONS, en } from '../../src/i18n/translations'
 
 let tray: Tray | null = null
@@ -43,7 +44,7 @@ export function createTray(): Tray {
     image = fallbackIcon()
   }
   tray = new Tray(image)
-  tray.setToolTip('Edge-Drop')
+  tray.setToolTip(APP_CONFIG.appName)
 
   // Show welcome notification on first run
   if (!existsSync(PATHS.indexFile())) {
@@ -100,6 +101,7 @@ export function createTray(): Tray {
       }
     }))
   }
+
 
 function getTrayText(settingsLang: string | undefined, key: keyof typeof en['tray']): string {
   let langCode = settingsLang || 'system'
