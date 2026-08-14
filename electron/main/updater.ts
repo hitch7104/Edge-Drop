@@ -3,6 +3,25 @@ import { isStoreBuild } from './ipc'
 import { pushState } from './state'
 import { getSettings } from '../store/settings'
 
+/**
+ * Auto-update is off in this fork, deliberately.
+ *
+ * The upstream publish target is Deepender25/Edge-Drop. Left enabled, the next
+ * upstream release would be downloaded and installed over this build — silently
+ * replacing it with a version that has no SSH upload feature. Rather than point
+ * the updater at a fork release feed that nobody publishes to, the whole update
+ * surface is a no-op: `build.publish` is null and every entry point below bails.
+ *
+ * To re-enable: set `build.publish` in package.json to a repo that actually hosts
+ * releases of *this* build, then flip this to false.
+ */
+const FORK_UPDATES_DISABLED = true
+
+/** True when no update mechanism should run at all. */
+function updatesDisabled(): boolean {
+  return FORK_UPDATES_DISABLED || isStoreBuild()
+}
+
 // Module-level reference to the single autoUpdater instance.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _autoUpdater: any = null
@@ -11,7 +30,7 @@ let _autoUpdater: any = null
  * Called from ipc.ts when the renderer clicks "Restart to Update".
  */
 export function quitAndInstallUpdate(): void {
-  if (isStoreBuild()) return
+  if (updatesDisabled()) return
   if (!_autoUpdater) {
     console.error('[AutoUpdater] quitAndInstall requested but autoUpdater is not initialized.')
     return
@@ -28,7 +47,7 @@ export function quitAndInstallUpdate(): void {
  * Syncs the autoDownload flag on electron-updater whenever user changes settings.
  */
 export function syncAutoUpdaterState(): void {
-  if (isStoreBuild() || !_autoUpdater) return
+  if (updatesDisabled() || !_autoUpdater) return
   const settings = getSettings()
   const enabled = settings.autoUpdates !== false
   _autoUpdater.autoDownload = enabled
@@ -99,7 +118,7 @@ function checkGitHubReleaseFast(): Promise<{ tag_name?: string } | null> {
  * Manually check for updates on user click with instant fast-path resolution.
  */
 export async function checkForUpdatesManual(): Promise<{ status: string; version?: string; error?: string }> {
-  if (isStoreBuild()) {
+  if (updatesDisabled()) {
     return { status: 'up-to-date', version: app.getVersion() }
   }
 
@@ -160,7 +179,7 @@ export async function checkForUpdatesManual(): Promise<{ status: string; version
  * Trigger download of the update when user clicks "Download & Update" in manual mode.
  */
 export async function startUpdateDownload(): Promise<void> {
-  if (isStoreBuild() || !_autoUpdater) return
+  if (updatesDisabled() || !_autoUpdater) return
   try {
     await _autoUpdater.downloadUpdate()
   } catch (err) {
@@ -173,6 +192,10 @@ export async function startUpdateDownload(): Promise<void> {
  * Completely disabled on Microsoft Store (MSIX) builds to comply with Store policies.
  */
 export function initAutoUpdater(): void {
+  if (FORK_UPDATES_DISABLED) {
+    console.log('[AutoUpdater] Disabled in this fork — no update feed is configured.')
+    return
+  }
   if (isStoreBuild()) {
     console.log('[AutoUpdater] Store build detected — auto-updater disabled.')
     return
