@@ -412,7 +412,8 @@ function getStickGeometry(): { x: number; y: number; width: number; height: numb
 }
 
 export function createWindow(): BrowserWindow {
-  const { x, y, height } = getStickGeometry()
+  const stick = getStickGeometry()
+  const { x, y, height } = stick
 
   mainWindow = new BrowserWindow({
     icon: PATHS.icon(),
@@ -512,6 +513,22 @@ export function createWindow(): BrowserWindow {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // Windows clamps a window's *creation* size to the display it first lands on
+  // — the primary — so docking to a taller monitor silently lost the excess
+  // (measured: asked for 2512px, got the primary's 1392px, leaving the blade
+  // covering only the top half of the screen). Re-applying the same bounds once
+  // the window exists is honoured in full.
+  mainWindow.setBounds(stick)
+
+  // The display list is not always complete this early: across three launches
+  // the panel resolved to three different monitors, because Tier-1 (saved
+  // display id) can miss while Windows is still enumerating and the fallback
+  // lands on the primary. Re-resolve once things have settled; when the first
+  // answer was already right this is a no-op.
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed()) repositionWindow()
+  }, 2500)
 
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow) return
