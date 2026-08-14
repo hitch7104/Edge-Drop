@@ -1,0 +1,214 @@
+/**
+ * SSH upload UI — target menu, settings rows, and the in-flight spinner.
+ *
+ * Kept in its own stylesheet (rather than appended to item.css / settings.css)
+ * so this fork's additions rebase cleanly onto upstream.
+ */
+
+/* ---- in-flight spinner on the item action button ---- */
+.ssh-spin {
+  animation: ssh-spin 0.9s linear infinite;
+}
+@keyframes ssh-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- target chooser (portal to body) ---- */
+.ssh-target-menu {
+  position: fixed;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--edge-strong);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.ssh-target-menu-head {
+  padding: 3px 8px 5px;
+  font-size: calc(10px * var(--font-scale, 1));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ssh-target-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: calc(12px * var(--font-scale, 1));
+  text-align: left;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.ssh-target-menu-row:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.ssh-target-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-target-chord {
+  flex: 0 0 auto;
+  font-size: calc(10px * var(--font-scale, 1));
+  color: rgba(255, 255, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- settings: target list ---- */
+.ssh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssh-card {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--edge-light);
+  border-radius: 12px;
+}
+
+.ssh-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssh-card-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(13px * var(--font-scale, 1));
+  color: var(--text-primary);
+}
+
+.ssh-card-sub {
+  margin-top: 2px;
+  font-size: calc(11px * var(--font-scale, 1));
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-badge {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--edge-strong);
+  font-size: calc(10px * var(--font-scale, 1));
+  color: var(--text-tertiary);
+}
+.ssh-badge.is-default {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-glow);
+}
+
+.ssh-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ssh-field.wide {
+  grid-column: 1 / -1;
+}
+
+.ssh-field label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: calc(10px * var(--font-scale, 1));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ssh-field input,
+.ssh-field select {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--edge-light);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: calc(12px * var(--font-scale, 1));
+}
+.ssh-field input:focus,
+.ssh-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ssh-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ssh-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--edge-strong);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: calc(11px * var(--font-scale, 1));
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.ssh-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+}
+.ssh-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.ssh-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Hotkey capture button: shows the chord, turns accent while listening. */
+.ssh-chord {
+  font-variant-numeric: tabular-nums;
+}
+.ssh-chord.listening {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-glow);
+}
+
+.ssh-status {
+  margin-top: 8px;
+  font-size: calc(11px * var(--font-scale, 1));
+  line-height: 1.4;
+  word-break: break-all;
+}
+.ssh-status.ok { color: #4ade80; }
+.ssh-status.err { color: #f87171; }
+
+.ssh-empty {
+  padding: 14px;
+  border: 1px dashed var(--edge-strong);
+  border-radius: 12px;
+  font-size: calc(12px * var(--font-scale, 1));
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}

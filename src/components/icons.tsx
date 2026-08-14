@@ -38,7 +38,11 @@ import {
   LogOut,
   Coffee,
   Heart,
-  Star
+  Star,
+  Server,
+  UploadCloud,
+  Plus,
+  Loader2
 } from 'lucide-react'
 import { getFileKindByExt } from '../lib/fileType'
 
@@ -87,6 +91,10 @@ export const ExpandIcon = (p: P) => <Maximize2 size={p.width ?? 16} {...(p as an
 export const ContractIcon = (p: P) => <Minimize2 size={p.width ?? 16} {...(p as any)} />
 export const FolderOpenIcon = (p: P) => <FolderOpen size={p.width ?? 16} {...(p as any)} />
 export const CheckIcon = (p: P) => <Check size={p.width ?? 16} {...(p as any)} />
+export const ServerIcon = (p: P) => <Server size={p.width ?? 16} {...(p as any)} />
+export const UploadIcon = (p: P) => <UploadCloud size={p.width ?? 16} {...(p as any)} />
+export const PlusIcon = (p: P) => <Plus size={p.width ?? 16} {...(p as any)} />
+export const SpinnerIcon = (p: P) => <Loader2 size={p.width ?? 16} {...(p as any)} />
 export const FileIconGlyph = FileIcon
 
 const PdfGlyph = (p: P) => <FileText size={p.width ?? 16} {...(p as any)} />

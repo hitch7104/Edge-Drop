@@ -25,6 +25,7 @@ import { basename, formatBytes, previewText, relativeTime, formatImageDisplayNam
 import { getFileKind } from '../lib/fileType'
 import { playButtonClickSound, playToggleSound, playDeleteSound, playCardExpandSound } from '../lib/soundEffects'
 import { CopyIcon, FileKindIcon, ImageIcon, LinkIcon, PinIcon, PinFillIcon, TrashIcon, MinusIcon, ChevronUpIcon, ExpandIcon, ContractIcon, ExternalLinkIcon } from './icons'
+import { SshUploadAction } from './SshUploadAction'
 import '../styles/item.css'
 
 import { tryPaste } from '../lib/tryPaste'
@@ -239,6 +240,7 @@ function ClipboardItemBase({ item }: Props) {
           }}>
             <CopyIcon />
           </button>
+          <SshUploadAction itemId={item.id} />
           {item.data.kind === 'text' && item.data.isUrl && (
             <button
               className="act"

@@ -9,7 +9,7 @@
  *   - `Renderer -> Main` calls (invoke/handle) are listed in `InvokeMap`.
  *   - `Main -> Renderer` events (send/on) are listed in `EventMap`.
  */
-import type { ClipboardItemDto, DragRequest, MergeResult, Settings } from './types'
+import type { ClipboardItemDto, DragRequest, MergeResult, Settings, SshProfile, SshUploadRequest, SshUploadResult } from './types'
 
 /* ------------------------------------------------------------------ */
 /* Renderer -> Main  (ipcMain.handle / ipcRenderer.invoke)            */
@@ -62,6 +62,7 @@ export interface InvokeMap {
   /** Toggle whether the flyout preview is active (widens the window). */
   'window:set-preview-mode': { args: [active: boolean]; result: void }
 
+
   /** Minimize the window (used by Onboarding). */
   'window:minimize': { args: []; result: void }
 
@@ -94,6 +95,12 @@ export interface InvokeMap {
 
   /** Get the list of connected displays. */
   'displays:list': { args: []; result: import('./types').DisplayInfo[] }
+
+  /** Upload an item (or one sub-item) to a configured SSH target via scp. */
+  'ssh:upload': { args: [req: SshUploadRequest]; result: SshUploadResult }
+
+  /** Probe key auth + remote-dir writability for a target, without writing a file. */
+  'ssh:test-profile': { args: [profile: SshProfile]; result: SshUploadResult }
 }
 
 /* ------------------------------------------------------------------ */

@@ -393,7 +393,14 @@ export class ItemStore {
       if (targetPaths.length === 1) {
         const p = targetPaths[0]
         const imgName = pathBasename(p)
-        if (/^[a-z0-9]{6,12}-[a-z0-9]{6,12}\.[a-z0-9]+$/i.test(imgName) || p.includes('edge-drop/images') || p.includes('edge-drop\\images') || p.includes('edge-drop/temp') || p.includes('edge-drop\\temp')) {
+        // Is this one of our own staged files coming back in? Compare against the
+        // real userData paths rather than a hardcoded folder name — the product
+        // name (and therefore the userData directory) is not fixed, and the old
+        // literal was also case-sensitive against a capitalized directory.
+        const norm = (s: string): string => s.replace(/\\/g, '/').toLowerCase()
+        const inOwnStorage = norm(p).startsWith(norm(PATHS.imagesDir()))
+          || norm(p).startsWith(norm(PATHS.tempDir()))
+        if (/^[a-z0-9]{6,12}-[a-z0-9]{6,12}\.[a-z0-9]+$/i.test(imgName) || inOwnStorage) {
           const imageId = imgName.split('.')[0]
           const ext = extname(p).slice(1) || 'png'
           let bytes = 0
@@ -460,6 +467,17 @@ export class ItemStore {
 
   get(id: string): ClipboardItem | undefined {
     return this.items.find((x) => x.id === id)
+  }
+
+  /**
+   * Most recently captured item, or undefined when the shelf is empty.
+   *
+   * `items` is maintained newest-first by `add()`, so this is the entry the user
+   * just copied. Used by the SSH upload hotkeys, which act on "the thing I just
+   * copied" without needing the renderer to be open.
+   */
+  newest(): ClipboardItem | undefined {
+    return this.items[0]
   }
 
   list(): readonly ClipboardItem[] {

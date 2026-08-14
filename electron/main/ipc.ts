@@ -21,6 +21,10 @@ import { startDragOut, resolveDragData } from './drag'
 import { clipboardSignature } from '../clipboard/formats'
 import type { ItemData, MergeResult } from '../../shared/types'
 import { quitAndInstallUpdate, checkForUpdatesManual, startUpdateDownload, syncAutoUpdaterState } from './updater'
+import { testProfile } from './ssh'
+import { uploadRequest } from './sshActions'
+import { registerSshHotkeys } from './sshHotkeys'
+import { syncScheduledTaskAutostart } from './autostart'
 
 /**
  * Returns true if the current system clipboard content matches the given item data.
@@ -489,13 +493,9 @@ export function registerIpc(): void {
       }
     }
     const next = saveSettings(enrichedPatch)
-    if (patch.launchAtLogin !== undefined && app.isPackaged) {
-      try {
-        app.setLoginItemSettings({
-          openAtLogin: next.launchAtLogin,
-          path: app.getPath('exe')
-        })
-      } catch { /* ignore */ }
+    if (patch.launchAtLogin !== undefined || patch.launchViaScheduledTask !== undefined) {
+      // Owns both mechanisms (scheduled task vs. Run key) so they can't both be armed.
+      void syncScheduledTaskAutostart(next)
     }
     if (patch.hotZoneWidth !== undefined) {
       setHotZoneWidth(patch.hotZoneWidth)
@@ -509,6 +509,10 @@ export function registerIpc(): void {
     if (patch.autoUpdates !== undefined) {
       syncAutoUpdaterState()
     }
+    // Profile edits can add, remove, or re-chord a hotkey — rebind the whole set.
+    if (patch.sshProfiles !== undefined) {
+      registerSshHotkeys()
+    }
     pushState.settings(next)
     rebuildTrayMenu()
     return next
@@ -517,6 +521,7 @@ export function registerIpc(): void {
   handle('window:set-interactive', (value) => {
     setInteractive(value)
   })
+
 
   handle('window:set-preview-mode', (active) => {
     import('./window').then(m => m.setPreviewMode(active))
@@ -531,6 +536,14 @@ export function registerIpc(): void {
 
   handle('displays:list', () => {
     return getDisplayListOptions()
+  })
+
+  handle('ssh:upload', (req) => {
+    return uploadRequest(req)
+  })
+
+  handle('ssh:test-profile', (profile) => {
+    return testProfile(profile)
   })
 }
 
@@ -550,6 +563,7 @@ function on<C extends SendChannel>(
 }
 
 export function registerSendListeners(): void {
+
   on('item:start-drag', (sender, req) => {
     console.log('[IPC] item:start-drag req=', JSON.stringify(req))
     const data = resolveDragData(req)
@@ -879,10 +893,19 @@ let _releasesCache: Array<{
   highlights: Array<{ title: string; description: string }>
 }> | null = null
 
+/**
+ * This fork publishes no releases, and reading upstream's would present their
+ * future release notes as this app's own changelog. Serve the bundled history
+ * (upstream's, up to the fork point) and make no network call. Flip to false if
+ * this build ever gets its own release feed.
+ */
+const FORK_SERVES_STATIC_CHANGELOG = true
+
 async function fetchAndCacheReleases() {
+  if (FORK_SERVES_STATIC_CHANGELOG) return STATIC_CHANGELOG_FALLBACK
   try {
     const response = await fetch('https://api.github.com/repos/Deepender25/Edge-Drop/releases', {
-      headers: { 'User-Agent': 'Edge-Drop-App' },
+      headers: { 'User-Agent': 'Clip2SSH-Edge-App' },
       signal: AbortSignal.timeout(12000)
     })
     if (!response.ok) {

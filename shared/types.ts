@@ -99,6 +99,91 @@ export interface MergeResult {
   message?: string
 }
 
+/**
+ * One SSH upload target ("send this shelf item to that machine over scp").
+ *
+ * Ported from the standalone clip2ssh tray app, whose `Profile` this mirrors
+ * field-for-field so an existing `%APPDATA%/clip2ssh/config.json` migrates
+ * losslessly. Authentication is key-only by design: scp runs with
+ * `BatchMode=yes`, so nothing here is ever a secret and the profile list lives
+ * in plain settings.json alongside everything else.
+ */
+export interface SshProfile {
+  id: string
+  /** Display name, also the CLI/`--upload` selector. Usually the host alias. */
+  name: string
+  host: string
+  user: string
+  port: number
+  /** Absolute remote directory. Trailing slashes are trimmed on use. */
+  remoteDir: string
+  /**
+   * Electron accelerator (e.g. `Ctrl+Shift+Alt+V`), or '' for no hotkey.
+   * Pressing it uploads the newest shelf item to this target.
+   */
+  hotkey: string
+  /** Remote filename template. `{ts}` -> yyyyMMdd_HHmmss, `{name}` -> source basename. */
+  fileNamePattern: string
+  /**
+   * Re-encode images before upload. 'original' ships the stored bytes as-is,
+   * which is both fastest and lossless — clip2ssh had no such option because it
+   * always re-encoded from a clipboard bitmap.
+   */
+  imageFormat: 'original' | 'png' | 'jpeg'
+  /** JPEG quality 1-100, only consulted when imageFormat is 'jpeg'. */
+  jpgQuality: number
+  /** Replace the clipboard with the remote path after a successful upload. */
+  replaceClipboard: boolean
+  /**
+   * Show an OS notification on a *successful* upload. Failures always notify —
+   * a silent failure after a hotkey press is indistinguishable from the hotkey
+   * not working at all.
+   */
+  notify: boolean
+  /** `scp -O` — legacy SCP protocol, required by targets with no SFTP subsystem (Synology DSM). */
+  legacyScp: boolean
+}
+
+export const DEFAULT_SSH_PROFILE: Omit<SshProfile, 'id'> = {
+  name: 'new-target',
+  host: '',
+  user: '',
+  port: 22,
+  remoteDir: '/tmp',
+  hotkey: '',
+  fileNamePattern: 'clip_{ts}',
+  imageFormat: 'original',
+  jpgQuality: 90,
+  replaceClipboard: true,
+  notify: true,
+  legacyScp: false
+}
+
+/**
+ * Request to upload one item to one target.
+ *
+ * `paths` / `imageId` narrow a bundle or collection to a single sub-item, the
+ * same addressing scheme `DragRequest` uses.
+ */
+export interface SshUploadRequest {
+  id: string
+  /** Target profile id. Omitted or 'default' resolves to the default target. */
+  profileId?: string
+  paths?: string[]
+  imageId?: string
+}
+
+/** Outcome of an scp upload, surfaced to the renderer as a toast. */
+export interface SshUploadResult {
+  ok: boolean
+  /** Remote path written, on success. */
+  remotePath?: string
+  /** scp exit code, when the process ran but failed. */
+  exitCode?: number
+  /** Human-readable failure reason (already truncated for display). */
+  error?: string
+}
+
 export interface Settings {
   /** Fraction of the screen height the hot zone occupies (0.2 - 0.6). */
   hotZoneHeight: number
@@ -168,6 +253,18 @@ export interface Settings {
   autoUpdates?: boolean
   /** Active UI language code ('system' | 'en' | 'es' | 'fr' | 'de' | ...). Default: 'system'. */
   language?: string
+  /** Configured scp upload targets. Empty (the default) keeps the feature dormant. */
+  sshProfiles: SshProfile[]
+  /** Profile used by the shelf's one-click upload button and the `default` selector. */
+  defaultSshProfileId?: string
+  /** Set once the one-time import from %APPDATA%/clip2ssh/config.json has run. */
+  clip2sshImported?: boolean
+  /**
+   * Run at login via a delayed-logon Scheduled Task instead of the registry Run
+   * key. The Run key's tail can be dropped when the shell has a rough logon, and
+   * a 30s-delayed task trigger fires independently of the shell.
+   */
+  launchViaScheduledTask?: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -197,8 +294,13 @@ export const DEFAULT_SETTINGS: Settings = {
   lastSeenChangelogVersion: undefined,
   hoverActivation: true,
   fontSizeScale: 1.0,
-  autoUpdates: true,
-  language: 'system'
+  // Off by default: this fork has no update feed (see updater.ts).
+  autoUpdates: false,
+  language: 'system',
+  sshProfiles: [],
+  defaultSshProfileId: undefined,
+  clip2sshImported: false,
+  launchViaScheduledTask: true
 }
 
 

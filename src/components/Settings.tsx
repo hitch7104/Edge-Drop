@@ -4,13 +4,14 @@ import { useStore } from '../store/appStore'
 import type { DisplayInfo } from '../../shared/types'
 import { LiquidOctopusLoader } from './LiquidOctopusLoader'
 import { TickIndicatorIcon, CopyIndicatorIcon, SparkleIndicatorIcon } from './CopyIndicatorCurve'
-import { ChevronRightIcon, CloseIcon, LogOutIcon, StarIcon, GithubOctocatLogo } from './icons'
+import { ChevronRightIcon, CloseIcon, LogOutIcon, GithubOctocatLogo } from './icons'
 import { ChangelogView } from './ChangelogView'
+import { SshTargetsTab } from './SshTargetsTab'
 import { playDialTickSound, playToggleSound, playButtonClickSound } from '../lib/soundEffects'
 import { useTranslation } from '../i18n'
 import '../styles/settings.css'
 
-type SettingsTab = 'behaviour' | 'position' | 'appearance'
+type SettingsTab = 'behaviour' | 'position' | 'appearance' | 'targets'
 
 export function Settings({ inlineIndicatorStyle }: { inlineIndicatorStyle?: boolean }) {
   const { t } = useTranslation()
@@ -20,6 +21,7 @@ export function Settings({ inlineIndicatorStyle }: { inlineIndicatorStyle?: bool
     { id: 'behaviour',  label: t('tabs.behaviour') },
     { id: 'position',   label: t('tabs.position') },
     { id: 'appearance', label: t('tabs.appearance') },
+    { id: 'targets',    label: t('ssh.tab') },
   ]
   const patch = useStore((s) => s.patchSettings)
   const updateInfo = useStore((s) => s.updateInfo)
@@ -84,7 +86,8 @@ export function Settings({ inlineIndicatorStyle }: { inlineIndicatorStyle?: bool
   const tabScrollPositions = useRef<Record<SettingsTab, number>>({
     behaviour: 0,
     position: 0,
-    appearance: 0
+    appearance: 0,
+    targets: 0
   })
 
   const handleTabSwitch = (newTab: SettingsTab) => {
@@ -146,65 +149,24 @@ export function Settings({ inlineIndicatorStyle }: { inlineIndicatorStyle?: bool
   }, [isStoreBuild, activeTab, hasUpdatePrompt, updateDownloaded, updateInfo, checkState.status])
 
   // ── Persistent footer shared across all tabs ───────────────────────────
+  // The upstream "Community & Support" block (feedback form, Ko-fi donations,
+  // GitHub star) is removed in this fork — it solicits on behalf of a project
+  // this build is not. Attribution to the original author stays, as a plain link.
   const PersistentFooter = (
     <>
-      {/* Community & Support */}
-      <div className="setting-group-label" style={{ marginTop: 20 }}>{t('footer.communityAndSupport')}</div>
-
-      <div className="setting-row vertical" style={{ gap: 10 }}>
-        <div className="setting-info">
-          <div className="setting-title">{t('footer.feedbackTitle')}</div>
-          <div className="setting-desc">{t('footer.feedbackDesc')}</div>
-        </div>
-        <button
-          className="pill display-pill"
-          style={{ width: '100%', justifyContent: 'center', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '12.5px' }}
-          onClick={() => {
-            playButtonClickSound()
-            window.open('https://github.com/Deepender25/Edge-Drop/issues/new/choose', '_blank')
-          }}
-        >
-          {t('footer.submitFeedback')}
-        </button>
-      </div>
-
-      {/* Support & GitHub Promo Footer */}
       <div className="setting-divider" style={{ marginTop: 20 }} />
 
       <div className="support-promo">
-        <div className="support-promo-title">
-          {t('footer.supportPromo')}
-        </div>
-        <div className="support-buttons-group">
-          {/* Primary Action: Support via Ko-fi / UPI */}
-          <button
-            className="kofi-support-btn"
-            onClick={() => {
-              playButtonClickSound()
-              window.open('https://edgedrop.vercel.app/supportedgedrop', '_blank')
-            }}
-          >
-            <div className="support-btn-heart-badge">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#ff5252" stroke="none">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-            </div>
-            <span>{t('footer.supportOnKofi')}</span>
-          </button>
-
-          {/* Secondary Action: GitHub Star */}
-          <button
-            className="github-promo-btn"
-            onClick={() => {
-              playButtonClickSound()
-              window.open('https://github.com/Deepender25/Edge-Drop', '_blank')
-            }}
-          >
-            <GithubOctocatLogo width={14} height={14} className="github-octocat-icon" />
-            <span>{t('footer.starOnGithub')}</span>
-            <StarIcon width={13} height={13} className="star-icon" fill="#fbbf24" stroke="#fbbf24" style={{ marginLeft: 2 }} />
-          </button>
-        </div>
+        <button
+          className="github-promo-btn"
+          onClick={() => {
+            playButtonClickSound()
+            window.open('https://github.com/Deepender25/Edge-Drop', '_blank')
+          }}
+        >
+          <GithubOctocatLogo width={14} height={14} className="github-octocat-icon" />
+          <span>{t('footer.basedOnEdgeDrop')}</span>
+        </button>
         <div className="app-version-footer">
           {t('footer.version')} {currentVersion || '0.2.6'}
         </div>
@@ -1189,6 +1151,19 @@ export function Settings({ inlineIndicatorStyle }: { inlineIndicatorStyle?: bool
                     />
                   </div>
 
+                  {PersistentFooter}
+                </motion.div>
+              )}
+
+              {activeTab === 'targets' && (
+                <motion.div
+                  key="tab-targets"
+                  initial={{ opacity: 0, scale: 0.98, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <SshTargetsTab />
                   {PersistentFooter}
                 </motion.div>
               )}

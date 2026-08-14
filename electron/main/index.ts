@@ -19,6 +19,9 @@ import { initState, getWatcher, loadSettings, saveSettings, pushState, stopState
 import { initAutoUpdater } from './updater'
 import { createOnboardingWindow } from './onboardingWindow'
 import { startFullscreenMonitor, stopFullscreenMonitor, triggerFullscreenCheck } from './fullscreen'
+import { runClip2sshImportOnce } from '../store/clip2sshImport'
+import { registerSshHotkeys, unregisterSshHotkeys } from './sshHotkeys'
+import { syncScheduledTaskAutostart } from './autostart'
 import { extname, normalize } from 'node:path'
 import { existsSync, createReadStream } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -68,14 +71,16 @@ app.on('before-quit', () => {
   stopFullscreenMonitor()
   getWatcher().stop()
   try {
+    unregisterSshHotkeys()
     const { globalShortcut } = require('electron')
     globalShortcut.unregisterAll()
   } catch { /* ignore */ }
 })
 
 app.whenReady().then(() => {
-  // Set App User Model ID so native notifications are branded as "Edge-Drop" on Windows
-  app.setAppUserModelId('com.edgedrop.app')
+  // Set App User Model ID so native notifications are branded correctly on Windows.
+  // Must match `build.appId` in package.json, or toasts show up unattributed.
+  app.setAppUserModelId('com.clip2ssh.edge')
 
   ensureDirs()
   cleanTemp()
@@ -111,6 +116,10 @@ app.whenReady().then(() => {
   initState()
   prewarmDragIcons()
 
+  // One-time adoption of the predecessor tray app's SSH targets. Runs before the
+  // first settings read below so imported profiles are live on this same launch.
+  runClip2sshImportOnce()
+
   // Reflect settings immediately.
   let settings = loadSettings()
   if (!settings.tutorialCompleted) {
@@ -124,14 +133,8 @@ app.whenReady().then(() => {
   }
   setHotZoneWidth(settings.hotZoneWidth || 3)
   
-  if (app.isPackaged) {
-    try {
-      app.setLoginItemSettings({
-        openAtLogin: settings.launchAtLogin,
-        path: app.getPath('exe')
-      })
-    } catch { /* ignore in non-packaged / sandbox */ }
-  }
+  void syncScheduledTaskAutostart(settings)
+  registerSshHotkeys()
   registerIncognitoApplier((v) => getWatcher().setPaused(v))
   getWatcher().setPaused(settings.incognito)
   pushState.settings(settings)

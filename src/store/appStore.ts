@@ -102,6 +102,10 @@ interface AppState {
   paste: (id: string) => Promise<void>
   pasteSubitem: (req: DragRequest) => Promise<void>
   patchSettings: (patch: Partial<Settings>) => Promise<void>
+  /** scp an item to a target. Main toasts the outcome, so callers can ignore it. */
+  uploadToSsh: (req: import('../../shared/types').SshUploadRequest) => Promise<void>
+  /** Item ids with an upload in flight, so the tile can show a spinner. */
+  uploadingIds: string[]
   setTutorialStep: (step: number) => void
 }
 
@@ -353,6 +357,25 @@ export const useStore = create<AppState>((set, get) => ({
   async patchSettings(patch) {
     const next = await edge.updateSettings(patch)
     set({ settings: next })
+  },
+
+  uploadingIds: [],
+
+  async uploadToSsh(req) {
+    // Track by item id (not sub-item) — the spinner belongs to the whole tile.
+    set({ uploadingIds: [...get().uploadingIds, req.id] })
+    try {
+      await edge.uploadToSsh(req)
+    } catch (err) {
+      console.error('[appStore] ssh upload failed:', err)
+    } finally {
+      // Remove one occurrence so two concurrent uploads of the same item don't
+      // clear the spinner while the second is still running.
+      const ids = [...get().uploadingIds]
+      const idx = ids.indexOf(req.id)
+      if (idx >= 0) ids.splice(idx, 1)
+      set({ uploadingIds: ids })
+    }
   },
 
   setTutorialStep: (step) => {

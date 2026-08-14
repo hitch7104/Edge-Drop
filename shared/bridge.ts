@@ -6,7 +6,7 @@
  * the renderer only ever sees `window.edge` typed as this interface.
  */
 import type { Settings } from './types'
-import type { DragRequest } from './types'
+import type { DragRequest, SshProfile, SshUploadRequest, SshUploadResult } from './types'
 
 export interface EdgeApi {
   /* Renderer -> Main */
@@ -46,6 +46,10 @@ export interface EdgeApi {
   }>>
   setInternalDrag: (active: boolean) => void
   broadcastTutorialStep: (step: number) => void
+  /** scp an item (or one sub-item) to a configured SSH target. */
+  uploadToSsh: (req: SshUploadRequest) => Promise<SshUploadResult>
+  /** Probe key auth + remote-dir writability for a target. Writes nothing. */
+  testSshProfile: (profile: SshProfile) => Promise<SshUploadResult>
 
   /* Main -> Renderer */
   onItems: (cb: (items: import('./types').ClipboardItemDto[]) => void) => () => void

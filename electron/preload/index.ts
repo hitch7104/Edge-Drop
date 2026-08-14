@@ -118,6 +118,8 @@ const api = {
   minimizeWindow: () => invoke('window:minimize'),
   setInternalDrag: (active: boolean) => { internalDrag = active },
   broadcastTutorialStep: (step: number) => send('tutorial:set-step', step),
+  uploadToSsh: (req: import('../../shared/types').SshUploadRequest) => invoke('ssh:upload', req),
+  testSshProfile: (profile: import('../../shared/types').SshProfile) => invoke('ssh:test-profile', profile),
 
   /* Main -> Renderer */
   onItems: (cb: (items: EventArgs<'state:items'>[0]) => void) => on('state:items', cb),
