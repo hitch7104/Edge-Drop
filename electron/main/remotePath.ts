@@ -55,6 +55,11 @@ export function resolveUnderHome(home: string, relative: string): string {
  * Returns null when the shell echoed the probe back instead of expanding it
  * (a POSIX shell handed `echo %USERPROFILE%`), so the caller can fall through
  * to the next probe rather than treating the literal as a path.
+ *
+ * This cannot tell a real POSIX home from a Unix-tool path on a Windows host —
+ * Cygwin's `pwd` reports `/cygdrive/c/Users/me`, which passes the POSIX test but
+ * is meaningless to that host's own sftp server. Probing `%USERPROFILE%` before
+ * `pwd` is what keeps the two apart; see the caller in `ssh.ts`.
  */
 export function parseRemoteHome(stdout: string): string | null {
   const line = (stdout || '')

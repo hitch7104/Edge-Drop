@@ -201,7 +201,13 @@ async function resolveRemoteDir(profile: SshProfile): Promise<string> {
   const cached = remoteHomeCache.get(key)
   if (cached) return resolveUnderHome(cached, dir)
 
-  for (const probe of ['pwd', 'echo %USERPROFILE%']) {
+  // Order matters, and not the way round you would guess. A Windows target with
+  // Unix tools on PATH answers `pwd` with a shell-private path — m2n has Cygwin
+  // and reports `/cygdrive/c/Users/JKKim`, which looks POSIX-absolute but is not
+  // a path its own sftp server can write to, so the upload fails. `echo
+  // %USERPROFILE%` is the safe first probe: a POSIX shell echoes it back
+  // unexpanded, which `parseRemoteHome` rejects, and `pwd` then answers.
+  for (const probe of ['echo %USERPROFILE%', 'pwd']) {
     const res = await runSsh(profile, probe)
     if (!res.ok) continue
     const home = parseRemoteHome(res.out)

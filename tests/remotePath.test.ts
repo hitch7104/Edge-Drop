@@ -73,4 +73,9 @@ describe('parseRemoteHome', () => {
     expect(parseRemoteHome('')).toBeNull()
     expect(parseRemoteHome('   \n\n')).toBeNull()
   })
+  it('cannot tell a Cygwin pwd on Windows from a real POSIX home', () => {
+    // Documents the limitation the probe order in ssh.ts exists to work around:
+    // this path passes the POSIX test but no Windows sftp server accepts it.
+    expect(parseRemoteHome('/cygdrive/c/Users/JKKim\n')).toBe('/cygdrive/c/Users/JKKim')
+  })
 })
