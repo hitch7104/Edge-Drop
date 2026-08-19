@@ -115,7 +115,13 @@ export interface SshProfile {
   host: string
   user: string
   port: number
-  /** Absolute remote directory. Trailing slashes are trimmed on use. */
+  /**
+   * Remote directory. Trailing slashes are trimmed on use.
+   *
+   * Absolute is preferred (`/tmp`, `~/drop`, `C:/Users/me`). A relative value is
+   * resolved against the remote home before use, so that the path handed to the
+   * clipboard is one that can be pasted somewhere useful.
+   */
   remoteDir: string
   /**
    * Electron accelerator (e.g. `Ctrl+Shift+Alt+V`), or '' for no hotkey.

@@ -24,6 +24,7 @@ import type { ItemData, SshProfile, SshUploadResult } from '../../shared/types'
 import { PATHS } from '../store/paths'
 import { getStore, loadSettings } from './state'
 import { isValidFilePath } from './pathValidation'
+import { isAbsoluteRemote, parseRemoteHome, remoteJoin, resolveUnderHome } from './remotePath'
 
 /**
  * Absolute path to the bundled OpenSSH client, falling back to PATH lookup.
@@ -174,9 +175,44 @@ function resolveUnits(data: ItemData, profile: SshProfile): { units: UploadUnit[
   }
 }
 
-function remoteJoin(remoteDir: string, name: string): string {
-  const dir = (remoteDir || '/tmp').replace(/\/+$/, '')
-  return `${dir}/${name}`
+/**
+ * Resolved remote home per target, keyed `user@host:port`.
+ *
+ * A home directory does not move while the app runs, and the probe costs a full
+ * ssh round-trip, so one lookup per target per session is enough.
+ */
+const remoteHomeCache = new Map<string, string>()
+
+/**
+ * Absolute remote directory for a profile.
+ *
+ * A relative `remoteDir` uploads correctly on its own — scp starts in the remote
+ * home — but the resulting path is worthless on the clipboard, so it is resolved
+ * against the remote home first. The probes cover the three shells a target may
+ * answer with (see `parseRemoteHome`); if none does, the relative dir is used
+ * unchanged, which is exactly the previous behaviour. An upload must never fail
+ * because a cosmetic path lookup did.
+ */
+async function resolveRemoteDir(profile: SshProfile): Promise<string> {
+  const dir = (profile.remoteDir || '/tmp').trim()
+  if (isAbsoluteRemote(dir)) return dir.replace(/\/+$/, '') || '/'
+
+  const key = `${profile.user}@${profile.host}:${profile.port}`
+  const cached = remoteHomeCache.get(key)
+  if (cached) return resolveUnderHome(cached, dir)
+
+  for (const probe of ['pwd', 'echo %USERPROFILE%']) {
+    const res = await runSsh(profile, probe)
+    if (!res.ok) continue
+    const home = parseRemoteHome(res.out)
+    if (!home) continue
+    remoteHomeCache.set(key, home)
+    console.log(`[ssh] remote home [${profile.name}] ${home}`)
+    return resolveUnderHome(home, dir)
+  }
+
+  console.warn(`[ssh] could not resolve remote home [${profile.name}], using "${dir}" as-is`)
+  return dir
 }
 
 function truncate(s: string, n = 160): string {
@@ -226,10 +262,12 @@ export async function uploadToProfile(data: ItemData, profile: SshProfile): Prom
   const { units, error } = resolveUnits(data, profile)
   if (error) return { ok: false, error }
 
+  const remoteDir = await resolveRemoteDir(profile)
+
   const uploaded: string[] = []
   try {
     for (const unit of units) {
-      const remotePath = remoteJoin(profile.remoteDir, unit.remoteName)
+      const remotePath = remoteJoin(remoteDir, unit.remoteName)
       const res = await runScp(profile, unit.localPath, remotePath)
       if (!res.ok) {
         console.error(`[ssh] upload FAIL [${profile.name}] exit=${res.code} ${truncate(res.err)}`)
@@ -264,7 +302,7 @@ export function findProfile(nameOrId?: string): SshProfile | null {
 }
 
 /** Run one ssh command against a target. Never throws. */
-function runSsh(profile: SshProfile, remoteCommand: string): Promise<{ ok: boolean; code: number; err: string }> {
+function runSsh(profile: SshProfile, remoteCommand: string): Promise<{ ok: boolean; code: number; out: string; err: string }> {
   const args = [
     '-n',
     '-o', 'BatchMode=yes',
@@ -275,13 +313,13 @@ function runSsh(profile: SshProfile, remoteCommand: string): Promise<{ ok: boole
   args.push(`${profile.user}@${profile.host}`, remoteCommand)
 
   return new Promise((resolve) => {
-    execFile(opensshBinary('ssh'), args, { windowsHide: true, maxBuffer: 1 << 16 }, (err, _stdout, stderr) => {
+    execFile(opensshBinary('ssh'), args, { windowsHide: true, maxBuffer: 1 << 16 }, (err, stdout, stderr) => {
       if (!err) {
-        resolve({ ok: true, code: 0, err: '' })
+        resolve({ ok: true, code: 0, out: stdout ?? '', err: '' })
         return
       }
       const code = typeof (err as { code?: number }).code === 'number' ? (err as { code?: number }).code as number : -1
-      resolve({ ok: false, code, err: stderr || err.message })
+      resolve({ ok: false, code, out: stdout ?? '', err: stderr || err.message })
     })
   })
 }
@@ -305,7 +343,8 @@ export async function testProfile(profile: SshProfile): Promise<SshUploadResult>
   if (!profile.host || !profile.user) {
     return { ok: false, error: 'host/user가 비어 있음' }
   }
-  const dir = (profile.remoteDir || '/tmp').replace(/\/+$/, '') || '/'
+  // Resolved, so a relative profile reports the real directory it writes to.
+  const dir = await resolveRemoteDir(profile)
   const probe = await runSsh(profile, `test -w '${dir.replace(/'/g, "'\\''")}'`)
   if (probe.ok) return { ok: true, remotePath: dir }
 
